@@ -25,7 +25,7 @@ public class Tester {
         try {
             res = parser.parse(new ByteArrayInputStream(test.getBytes(StandardCharsets.UTF_8.name())));
         } catch (ParseException e) {
-            fail("Parser failed on string: " + test + "\nCause: " + e.getMessage());
+            fail("Parser failed on string: " + test + "\nCause: " + e.getMessage() + e.getErrorOffset());
         } catch (AssertionError e) {
             fail("Assertion error from parser on test: " + test);
         } catch (UnsupportedEncodingException e) {

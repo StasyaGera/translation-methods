@@ -5,6 +5,8 @@
 * `CONCAT -> CONCAT KLEENE`
 * `CONCAT -> KLEENE`
 * `KLEENE -> KLEENE*`
+* `KLEENE -> KLEENE+`
+* `KLEENE -> KLEENE?`
 * `KLEENE -> n`
 * `KLEENE -> (EXPR)`
 
@@ -21,18 +23,20 @@ where `n` from `[a-z]`
 * `KLEENE  -> n KLEENE'`
 * `KLEENE  -> (EXPR) KLEENE'`
 * `KLEENE' -> *KLEENE'`
+* `KLEENE' -> +KLEENE'`
+* `KLEENE' -> ?KLEENE'`
 * `KLEENE' -> eps`
 
 ## FIRST and FOLLOW for non-terminals
 
-non-term|    FIRST    |       FOLLOW     
---------|-------------|--------------------
- EXPR   | n, (        | $, )          
- EXPR'  | &#124;, eps | $, )          
- CONCAT | n, (        | &#124;, $, )       
- CONCAT'| eps, n, (   | n, (, &#124;, $, ) 
- KLEENE | n, (        | n, (, &#124;, $, ) 
- KLEENE'| *, eps      | n, (, &#124;, $, ) 
+non-term|     FIRST    |       FOLLOW     
+--------|------------- |--------------------
+ EXPR   | n, (         | $, )          
+ EXPR'  | &#124;, eps  | $, )          
+ CONCAT | n, (         | &#124;, $, )       
+ CONCAT'| eps, n, (    | n, (, &#124;, $, ) 
+ KLEENE | n, (         | n, (, &#124;, $, ) 
+ KLEENE'| *, +, ?, eps | n, (, &#124;, $, ) 
  
 ## Usage
 * Run `Test.java` to evaluate random tests

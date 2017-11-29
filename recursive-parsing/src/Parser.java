@@ -77,6 +77,12 @@ public class Parser {
             case ASTERISK:
                 analyzer.nextToken();
                 return new Tree("KLEENE'", new Tree("*"), KLEENE_P());
+            case PLUS:
+                analyzer.nextToken();
+                return new Tree("KLEENE'", new Tree("+"), KLEENE_P());
+            case QUESTION:
+                analyzer.nextToken();
+                return new Tree("KLEENE'", new Tree("?"), KLEENE_P());
             default:
                 throw new AssertionError();
         }
