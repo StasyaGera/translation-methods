@@ -1,7 +1,8 @@
-## A tool for converting simple imperative language to C++
+## A tool for converting a primitive imperative language to C++
 ### Syntax
 * expressions are separated by a newline
 * all the variables are integers
+* all the variables are global
 * anything matching `[a-zA-Z_][a-zA-Z0-9_]*` is considered as a variable name
 * `read` and `print` keywords are used to read from standart input and write to standart output corresponsively
 * `read` is used as an expression: `x = read`
