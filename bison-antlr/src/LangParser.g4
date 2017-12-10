@@ -20,11 +20,15 @@ options {
 
 parseLangFile
     @init {
-        sb.append("#include \"stdio.h\"\n\nint main() {\n");
+        sb.append("int main() {\n");
     }
     @after {
         sb.append("\treturn 0;\n}");
         try (PrintWriter w = new PrintWriter("output.cpp")) {
+            w.print("#include \"stdio.h\"\n\n");
+            for (String name : vars) {
+                w.print("int " + name + ";\n");
+            }
             w.println(sb.toString());
         } catch (FileNotFoundException e) {
             System.err.println("Could not create output file");
@@ -160,11 +164,6 @@ vars returns [List<String> names]
 var returns [String name]
     : ID {
         $name = $ID.text;
-        if (vars.add($name)) {
-            for (int i = 0; i < tabs; i++) {
-                sb.append('\t');
-            }
-            sb.append("int " + $name + ";\n");
-        }
+        vars.add($name);
     }
 ;

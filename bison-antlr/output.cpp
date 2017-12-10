@@ -1,10 +1,10 @@
 #include "stdio.h"
 
+int x;
+int y;
+int z;
 int main() {
-	int x;
 	x = 1;
-	int y;
-	int z;
 	y = x;
 	scanf("%d", &z);
 	if (z == 1) {
