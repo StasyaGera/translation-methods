@@ -53,7 +53,7 @@ statement
             }
         }
     }
-    | PRINT es = expressions {
+    | PRINT LPAREN es = expressions RPAREN {
         for (int i = 0; i < tabs; i++) {
             sb.append('\t');
         }
@@ -63,13 +63,53 @@ statement
         for (int i = 0; i < sz - 1; i++) {
             sb.append("%d, ");
         }
-        sb.append("%d\", ");
+        sb.append("%d\\n\", ");
         for (int i = 0; i < sz - 1; i++) {
             sb.append($es.exprs.get(i) + ", ");
         }
         sb.append($es.exprs.get(sz - 1) + ");\n");
     }
     | IF c = condition COLON NEWLINE? finishIf[$c.cond]
+    | WHILE c = condition COLON NEWLINE? finishWhile[$c.cond]
+    | FOR v = var IN s = INT RANGE e = INT COLON NEWLINE? finishFor[$v.name, $s.text, $e.text]
+;
+
+finishWhile[String cond]
+    @init {
+        for (int i = 0; i < tabs; i++) {
+            sb.append('\t');
+        }
+
+        sb.append("while (" + $cond + ") {\n");
+        tabs++;
+    }
+    @after {
+        tabs--;
+        for (int i = 0; i < tabs; i++) {
+            sb.append('\t');
+        }
+        sb.append("}\n");
+    }
+    : (statement NEWLINE+)* DOT
+;
+
+finishFor[String name, String start, String end]
+    @init {
+        for (int i = 0; i < tabs; i++) {
+            sb.append('\t');
+        }
+
+        sb.append("for (" + $name + " = " + $start + "; " + $name + " < " + $end + "; " + $name + "++) {\n");
+        tabs++;
+    }
+    @after {
+        tabs--;
+        for (int i = 0; i < tabs; i++) {
+            sb.append('\t');
+        }
+        sb.append("}\n");
+    }
+    : (statement NEWLINE+)* DOT
 ;
 
 finishIf[String cond]
@@ -140,7 +180,7 @@ expression returns [String expr]
     | INT {
         $expr = $INT.text;
     }
-    | READ {
+    | READ LPAREN RPAREN {
         $expr = "scanf";
     }
     | v = var {

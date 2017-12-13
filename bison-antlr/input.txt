@@ -1,9 +1,19 @@
 x = 1
-y, z = x, read
+y, z = x, read()
 if z == 1:
-    print z, 1
+    print(z, 1)
 else if z == 2:
-    print z, 2
+    print(z, 2)
 else:
-    print z
+    print(z)
+.
+
+for x in 1..2:
+    print(x)
+.
+
+q = read()
+while q == 1:
+    print(q)
+    q = 2
 .

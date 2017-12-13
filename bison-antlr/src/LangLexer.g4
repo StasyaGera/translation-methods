@@ -2,8 +2,11 @@ lexer grammar LangLexer;
 
 IF            : 'if' ;
 ELSE          : 'else' ;
+WHILE         : 'while' ;
+FOR           : 'for' ;
 READ          : 'read' ;
 PRINT         : 'print' ;
+IN            : 'in' ;
 COLON         : ':' ;
 DOT           : '.' ;
 COMMA         : ',' ;
@@ -21,6 +24,7 @@ EQ            : '==' ;
 NE            : '!=' ;
 LPAREN        : '(' ;
 RPAREN        : ')' ;
+RANGE         : '..' ;
 
 INT           : '0'|[1-9][0-9]* ;
 ID            : [a-zA-Z_][A-Za-z0-9_]* ;
