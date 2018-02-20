@@ -2,13 +2,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NonTerminal extends Element {
-    List<Transition> transitions = new ArrayList<>();
+    String init = "";
+    List<Rule> rules = new ArrayList<>();
 
     NonTerminal(String name) {
-        super(name, false);
+        super(name);
     }
 
-    void add(Transition t) {
-        transitions.add(t);
+    void addRule(Rule t) {
+        rules.add(t);
+    }
+
+    void setInit(String init) {
+        this.init = init;
     }
 }

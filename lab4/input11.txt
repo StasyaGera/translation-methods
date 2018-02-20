@@ -1,0 +1,50 @@
+Regexp
+
+expr returns [Tree tree]
+	: concat expr_ {
+	    tree = new Tree("expr", concat, expr_);
+	}
+;
+kleene_ returns [Tree tree]
+	: STAR kleene_ {
+	    tree = new Tree("kleene_", new Tree("*"), kleene_);
+	}
+	| EPS {
+	    tree = new Tree("kleene_");
+	}
+;
+concat_ returns [Tree tree]
+	: kleene concat_ {
+	    tree = new Tree("concat_", kleene, concat_);
+	}
+	| EPS {
+	    tree = new Tree("concat_");
+	}
+;
+concat returns [Tree tree]
+	: kleene concat_ {
+	    tree = new Tree("concat", kleene, concat_);
+	}
+;
+expr_ returns [Tree tree]
+	: GUARD concat expr_ {
+	    tree = new Tree("expr_", new Tree("|"), concat, expr_);
+	}
+	| EPS {
+	    tree = new Tree("expr_");
+	}
+;
+kleene returns [Tree tree]
+	: LETTER { String l = lex.getCurString(); } kleene_ {
+	    tree = new Tree("kleene", new Tree(l), kleene_);
+	}
+	| OPAREN expr CPAREN kleene_ {
+	    tree = new Tree("kleene", new Tree("("), expr, new Tree(")"), kleene_);
+	}
+;
+
+LETTER : /[a-zA-Z]+/ ;
+OPAREN : '(' ;
+CPAREN : ')' ;
+STAR : '*' ;
+GUARD : '|' ;

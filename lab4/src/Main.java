@@ -9,14 +9,12 @@ class Main {
         try {
             lexer = new ReaderLexer(CharStreams.fromFileName("input.txt"));
             ReaderParser parser = new ReaderParser(new CommonTokenStream(lexer));
-            parser.parseInput();
+            ReaderParser.StartContext ctx = parser.start();
 
-            Grammar gr = new Grammar(parser.terminals, parser.nonTerminals, parser.start).transformToLL1();
+            Grammar gr = new Grammar(parser.terminals, parser.nonTerminals, parser.start)/*.transformToLL1()*/;
             System.out.println(gr);
-
-            Generator gen = new Generator(gr);
+            Generator gen = new Generator(gr, ctx.title, ctx.header, ctx.members);
             gen.generateAll();
-
         } catch (IOException e) {
             e.printStackTrace();
         }

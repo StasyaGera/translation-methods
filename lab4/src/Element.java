@@ -1,25 +1,45 @@
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Element {
-    private boolean terminal;
     final String name;
-//    List<Transition> transitions = new ArrayList<>();
+    Attribute synth;
+    List<Attribute> inh = new ArrayList<>();
 
-    protected Element(String name, boolean terminal) {
+    protected Element(String name) {
         this.name = name;
-        this.terminal = terminal;
+        this.synth = new Attribute();
+    }
+
+    public void setSynth(String type, String name) {
+        this.synth.type = type;
+        this.synth.name = name;
+    }
+
+    public void addInh(String type, String name) {
+        this.inh.add(new Attribute(type, name));
+    }
+
+    public String returnType() {
+        return synth.type;
+    }
+
+    class Attribute {
+        String type, name;
+
+        private Attribute() {
+            type = "void";
+            name = "";
+        }
+
+        Attribute(String type, String name) {
+            this.type = type;
+            this.name = name;
+        }
     }
 
     @Override
     public String toString() {
         return name;
     }
-
-    boolean isNonTerminal() { return !terminal; }
-    boolean isTerminal() { return terminal; }
-
-//    void add(Transition t) {
-//        transitions.add(t);
-//    }
 }

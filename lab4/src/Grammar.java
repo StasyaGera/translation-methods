@@ -45,12 +45,12 @@ public class Grammar {
             changed = false;
             for (Map.Entry<String, NonTerminal> entry : nonTerminals.entrySet()) {
                 NonTerminal A = entry.getValue();
-                for (Transition gamma : A.transitions) {
-                    Element g0 = gamma.elements.get(0);
+                for (Rule gamma : A.rules) {
+                    Element g0 = gamma.units.get(0).element;
                     Set<String> toAdd = new HashSet<>(first.get(g0.name));
-                    if (g0.isNonTerminal() && gamma.elements.size() > 1 && toAdd.contains(EPS.name)) {
+                    if (g0 instanceof NonTerminal && gamma.units.size() > 1 && toAdd.contains(EPS.name)) {
                         toAdd.remove(EPS.name);
-                        toAdd.addAll(first.get(gamma.elements.get(1).name));
+                        toAdd.addAll(first.get(gamma.units.get(1).element.name));
                     }
                     changed |= first.get(A.name).addAll(toAdd);
                 }
@@ -70,12 +70,12 @@ public class Grammar {
             changed = false;
             for (Map.Entry<String, NonTerminal> entry : nonTerminals.entrySet()) {
                 NonTerminal A = entry.getValue();
-                for (Transition alpha : A.transitions) {
-                    for (int i = alpha.elements.size() - 1; i >= 0; i--) {
-                        Element B = alpha.elements.get(i);
-                        if (B.isNonTerminal()) {
-                            if (i + 1 < alpha.elements.size()) {
-                                Element eta = alpha.elements.get(i + 1);
+                for (Rule alpha : A.rules) {
+                    for (int i = alpha.units.size() - 1; i >= 0; i--) {
+                        Element B = alpha.units.get(i).element;
+                        if (B instanceof NonTerminal) {
+                            if (i + 1 < alpha.units.size()) {
+                                Element eta = alpha.units.get(i + 1).element;
                                 Set<String> toAdd = new HashSet<>(first.get(eta.name));
                                 if (toAdd.remove(EPS.name))
                                     changed |= follow.get(B.name).addAll(follow.get(A.name));
@@ -93,17 +93,17 @@ public class Grammar {
     private boolean isLL1() {
         for (Map.Entry<String, NonTerminal> entry : nonTerminals.entrySet()) {
             NonTerminal curr = entry.getValue();
-            for (int i = 0; i < curr.transitions.size(); i++) {
-                for (int j = 0; j < curr.transitions.size(); j++) {
+            for (int i = 0; i < curr.rules.size(); i++) {
+                for (int j = 0; j < curr.rules.size(); j++) {
                     if (i == j) continue;
-                    Transition alpha = curr.transitions.get(i), beta = curr.transitions.get(j);
-                    Set<String> tmp = new HashSet<>(first.get(alpha.first().name));
-                    tmp.retainAll(first.get(beta.first().name));
+                    Rule alpha = curr.rules.get(i), beta = curr.rules.get(j);
+                    Set<String> tmp = new HashSet<>(first.get(alpha.head().name));
+                    tmp.retainAll(first.get(beta.head().name));
                     if (!tmp.isEmpty()) return false;
 
-                    if (first.get(alpha.first().name).contains(EPS.name)) {
+                    if (first.get(alpha.head().name).contains(EPS.name)) {
                         tmp = new HashSet<>(follow.get(curr.name));
-                        tmp.retainAll(first.get(beta.first().name));
+                        tmp.retainAll(first.get(beta.head().name));
                         if (!tmp.isEmpty()) return false;
                     }
                 }
@@ -112,6 +112,9 @@ public class Grammar {
         return true;
     }
 
+    // this will not save your attributes
+    // for grammars without attributes works fine
+    @Deprecated
     Grammar transformToLL1() {
         if (isLL1()) return this;
         Grammar LL1 = new Grammar(this);
@@ -123,30 +126,30 @@ public class Grammar {
                 NonTerminal A = entry.getValue();
                 NonTerminal A_ = new NonTerminal(A.name + "_");
 
-                List<Transition> recursive = A.transitions.stream().filter(t -> t.first() == A).collect(Collectors.toList());
-                List<Transition> nonRecursive = A.transitions.stream().filter(t -> t.first() != A).collect(Collectors.toList());
+                List<Rule> recursive = A.rules.stream().filter(t -> t.head() == A).collect(Collectors.toList());
+                List<Rule> nonRecursive = A.rules.stream().filter(t -> t.head() != A).collect(Collectors.toList());
 
                 if (!recursive.isEmpty()) {
                     newToNT.put(A_.name, A_);
-                    A.transitions.removeAll(recursive);
-                    for (Transition nr : nonRecursive) {
-                        Transition n = new Transition();
-                        n.elements.addAll(nr.elements);
+                    A.rules.removeAll(recursive);
+                    for (Rule nr : nonRecursive) {
+                        Rule n = new Rule();
+                        n.addAll(nr);
                         n.add(A_);
-                        A.transitions.add(n);
+                        A.rules.add(n);
                     }
 
-                    A.transitions.removeAll(nonRecursive);
-                    for (Transition r : recursive) {
-                        Transition n = new Transition();
-                        for (int i = 1; i < r.elements.size(); i++) {
-                            n.add(r.elements.get(i));
+                    A.rules.removeAll(nonRecursive);
+                    for (Rule r : recursive) {
+                        Rule n = new Rule();
+                        for (int i = 1; i < r.units.size(); i++) {
+                            n.add(r.units.get(i).element);
                         }
                         n.add(A_);
-                        A_.transitions.add(n);
+                        A_.rules.add(n);
                     }
 
-                    A_.transitions.add(new Transition(EPS));
+                    A_.rules.add(new Rule(EPS));
                 }
             }
 
@@ -154,27 +157,27 @@ public class Grammar {
                 NonTerminal A = entry.getValue();
                 NonTerminal A_ = new NonTerminal(A.name + "_");
 
-                for (int i = 0; i < A.transitions.size(); i++) {
-                    for (int j = i + 1; j < A.transitions.size(); j++) {
-                        Transition beta = A.transitions.get(i);
-                        Transition gamma = A.transitions.get(j);
-                        if (beta.first() == gamma.first()) {
+                for (int i = 0; i < A.rules.size(); i++) {
+                    for (int j = i + 1; j < A.rules.size(); j++) {
+                        Rule beta = A.rules.get(i);
+                        Rule gamma = A.rules.get(j);
+                        if (beta.head() == gamma.head()) {
                             newToNT.put(A_.name, A_);
 
-                            A.transitions.remove(beta);
-                            A.transitions.remove(gamma);
-                            A.transitions.add(new Transition(beta.first(), A_));
+                            A.rules.remove(beta);
+                            A.rules.remove(gamma);
+                            A.rules.add(new Rule(beta.head(), A_));
 
-                            Transition n = new Transition();
-                            for (int l = 1; l < beta.elements.size(); l++) {
-                                n.elements.add(beta.elements.get(l));
+                            Rule n = new Rule();
+                            for (int l = 1; l < beta.units.size(); l++) {
+                                n.units.add(beta.units.get(l));
                             }
-                            A_.add(n);
-                            n = new Transition();
-                            for (int l = 1; l < gamma.elements.size(); l++) {
-                                n.elements.add(gamma.elements.get(l));
+                            A_.addRule(n);
+                            n = new Rule();
+                            for (int l = 1; l < gamma.units.size(); l++) {
+                                n.units.add(gamma.units.get(l));
                             }
-                            A_.add(n);
+                            A_.addRule(n);
                         }
                     }
                 }
@@ -188,18 +191,18 @@ public class Grammar {
         return LL1;
     }
 
-    public Map<NonTerminal, Map<Terminal, Transition>> getTable() {
-        Map<NonTerminal, Map<Terminal, Transition>> table = new HashMap<>();
+    public Map<NonTerminal, Map<Terminal, Rule>> getTable() {
+        Map<NonTerminal, Map<Terminal, Rule>> table = new HashMap<>();
         for (Map.Entry<String, NonTerminal> nt_entry : nonTerminals.entrySet()) {
             NonTerminal curr_nt = nt_entry.getValue();
-            Map<Terminal, Transition> row = new HashMap<>();
+            Map<Terminal, Rule> row = new HashMap<>();
             for (Map.Entry<String, Terminal> t_entry : terminals.entrySet()) {
                 Terminal curr_t = t_entry.getValue();
-                for (Transition transit : curr_nt.transitions) {
-                    if (first.get(transit.first().name).contains(curr_t.name) ||
-                            (first.get(transit.first().name).contains(EPS.name) &&
+                for (Rule rule : curr_nt.rules) {
+                    if (first.get(rule.head().name).contains(curr_t.name) ||
+                            (first.get(rule.head().name).contains(EPS.name) &&
                                     follow.get(curr_nt.name).contains(curr_t.name))) {
-                        row.put(curr_t, transit);
+                        row.put(curr_t, rule);
                     }
                 }
             }
@@ -216,11 +219,11 @@ public class Grammar {
         sb.append("\nNonTerms:\n");
         nonTerminals.forEach((name, elem) -> {
             sb.append(name).append('\n');
-            if (!elem.transitions.isEmpty()) {
-                sb.append("\t: ").append(elem.transitions.get(0)).append('\n');
+            if (!elem.rules.isEmpty()) {
+                sb.append("\t: ").append(elem.rules.get(0)).append('\n');
             }
-            for (int i = 1; i < elem.transitions.size(); i++) {
-                sb.append("\t| ").append(elem.transitions.get(i)).append('\n');
+            for (int i = 1; i < elem.rules.size(); i++) {
+                sb.append("\t| ").append(elem.rules.get(i)).append('\n');
             }
             sb.append(";\n");
         });

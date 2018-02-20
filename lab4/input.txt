@@ -1,0 +1,39 @@
+Numeric
+
+add returns [int val]
+    : mul add_[{"h"}, mul] { val = add_; }
+;
+
+add_[String hello, int acc] returns [int val]
+    : ADD mul { int res = acc + mul; } add_[hello, res] { val = add_; }
+    | EPS { val = acc; }
+;
+
+mul returns [int val]
+    : pow mul_[pow] { val = mul_; }
+;
+
+mul_[int acc] returns [int val]
+    : MUL pow { int res = acc * pow; } mul_[res] { val = mul_; }
+    | EPS { val = acc; }
+;
+
+pow returns [int val]
+    : term pow_ { val = (int)Math.pow(term, pow_); }
+;
+
+pow_ returns [int val]
+    : POW term pow_ { val = (int)Math.pow(term, pow_); }
+    | EPS { val = 1; }
+;
+
+term returns [int val]
+    : NUM { val = Integer.parseInt(lex.getCurString()); }
+    | '(' add ')' { val = add; }
+;
+
+MUL : '*' ;
+ADD : '+' ;
+POW : '^^' ;
+
+NUM : /[0-9][0-9]*/ ;
