@@ -9,12 +9,12 @@ Syntax is copied from [ANTLRv4](http://www.antlr.org/).
 * supports an unlimited amount of inherited attributes but only one synthesised
 * does not allow user-defined symbols to skip (skips every `c` for which Java's `Character.isWhitespace(c)` is true)
 * no guarantees that parser will be generated without naming collisions
-* `transformToLL1` method from [Grammar class](lab4/src/Grammar.java) works only for grammars without attributes
+* `transformToLL1` method from [Grammar class](src/Grammar.java) works only for grammars without attributes
 
 ### Usage
 Write your grammar to the `input.txt` file, then run Main. Generated files will be placed to `my_gen` directory.
 
 ### Examples
 Grammar and generated files for:
-* [arithmetics](lab4/ex1) (operations `+`, `*` and right-associative power `^^`).
-* [regexps](lab4/ex2) (same as [this](recursive-parsing))
+* [arithmetics](ex1) (operations `+`, `*` and right-associative power `^^`).
+* [regexps](ex2) (same as [this](../recursive-parsing))
