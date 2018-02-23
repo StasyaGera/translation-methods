@@ -5,12 +5,12 @@ public class Grammar {
     final Terminal EPS = new Terminal("EPS");
     final Terminal END = new Terminal("END");
 
-    Element start;
+    NonTerminal start;
     Map<String, Terminal> terminals;
     Map<String, NonTerminal> nonTerminals;
     Map<String, Set<String>> first, follow;
 
-    Grammar(Map<String, Terminal> terminals, Map<String, NonTerminal> nonTerminals, Element start) {
+    Grammar(Map<String, Terminal> terminals, Map<String, NonTerminal> nonTerminals, NonTerminal start) {
         EPS.addStr(EPS.name);
         END.addStr(END.name);
 
@@ -96,6 +96,7 @@ public class Grammar {
             for (int i = 0; i < curr.rules.size(); i++) {
                 for (int j = 0; j < curr.rules.size(); j++) {
                     if (i == j) continue;
+
                     Rule alpha = curr.rules.get(i), beta = curr.rules.get(j);
                     Set<String> tmp = new HashSet<>(first.get(alpha.head().name));
                     tmp.retainAll(first.get(beta.head().name));
@@ -121,7 +122,6 @@ public class Grammar {
         Map<String, NonTerminal> newToNT;
         do {
             newToNT = new HashMap<>();
-
             for (Map.Entry<String, NonTerminal> entry : LL1.nonTerminals.entrySet()) {
                 NonTerminal A = entry.getValue();
                 NonTerminal A_ = new NonTerminal(A.name + "_");
@@ -208,7 +208,6 @@ public class Grammar {
             }
             table.put(curr_nt, row);
         }
-
         return table;
     }
 

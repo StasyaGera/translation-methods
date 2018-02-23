@@ -1,39 +1,50 @@
-Numeric
+Regexp
 
-add returns [int val]
-    : mul add_[{"h"}, mul] { val = add_; }
+expr returns [Tree tree]
+	: concat expr_ {
+	    tree = new Tree("expr", concat, expr_);
+	}
+;
+kleene_ returns [Tree tree]
+	: STAR kleene_ {
+	    tree = new Tree("kleene_", new Tree("*"), kleene_);
+	}
+	| EPS {
+	    tree = new Tree("kleene_");
+	}
+;
+concat_ returns [Tree tree]
+	: kleene concat_ {
+	    tree = new Tree("concat_", kleene, concat_);
+	}
+	| EPS {
+	    tree = new Tree("concat_");
+	}
+;
+concat returns [Tree tree]
+	: kleene concat_ {
+	    tree = new Tree("concat", kleene, concat_);
+	}
+;
+expr_ returns [Tree tree]
+	: GUARD concat expr_ {
+	    tree = new Tree("expr_", new Tree("|"), concat, expr_);
+	}
+	| EPS {
+	    tree = new Tree("expr_");
+	}
+;
+kleene returns [Tree tree]
+	: LETTER { String l = lex.getCurString(); } kleene_ {
+	    tree = new Tree("kleene", new Tree(l), kleene_);
+	}
+	| OPAREN expr CPAREN kleene_ {
+	    tree = new Tree("kleene", new Tree("("), expr, new Tree(")"), kleene_);
+	}
 ;
 
-add_[String hello, int acc] returns [int val]
-    : ADD mul { int res = acc + mul; } add_[hello, res] { val = add_; }
-    | EPS { val = acc; }
-;
-
-mul returns [int val]
-    : pow mul_[pow] { val = mul_; }
-;
-
-mul_[int acc] returns [int val]
-    : MUL pow { int res = acc * pow; } mul_[res] { val = mul_; }
-    | EPS { val = acc; }
-;
-
-pow returns [int val]
-    : term pow_ { val = (int)Math.pow(term, pow_); }
-;
-
-pow_ returns [int val]
-    : POW term pow_ { val = (int)Math.pow(term, pow_); }
-    | EPS { val = 1; }
-;
-
-term returns [int val]
-    : NUM { val = Integer.parseInt(lex.getCurString()); }
-    | '(' add ')' { val = add; }
-;
-
-MUL : '*' ;
-ADD : '+' ;
-POW : '^^' ;
-
-NUM : /[0-9][0-9]*/ ;
+LETTER : /[a-zA-Z]+/ ;
+OPAREN : '(' ;
+CPAREN : ')' ;
+STAR : '*' ;
+GUARD : '|' ;

@@ -4,9 +4,8 @@ import java.io.PrintWriter;
 import java.util.Map;
 
 public class Generator {
-    final String DIR = "my_gen/";
-
-    final private String NAME;
+    private final String DIR = "my_gen/";
+    private final String NAME;
     private String header, members;
     private Grammar grammar;
 
@@ -19,9 +18,9 @@ public class Generator {
 
     void generateAll() throws FileNotFoundException {
         generateMain();
+        generateToken();
         generateLexer();
         generateParser();
-        generateToken();
     }
 
     void generateToken() throws FileNotFoundException {
@@ -29,12 +28,14 @@ public class Generator {
         File file = new File(DIR, TokenName + ".java");
         try (PrintWriter out = new PrintWriter(file)) {
             out.println("public enum " + TokenName + " {");
+            // printing all the terminals' names as enum members
             StringBuilder sb = new StringBuilder();
             for (String term : grammar.terminals.keySet()) {
                 sb.append("\t").append(term.toUpperCase()).append(", \n");
             }
-            sb.delete(sb.length() - 3, sb.length());
-            out.println(sb.toString());
+            // an easy way to remove last comma
+            if (sb.length() >= 3)
+                out.println(sb.delete(sb.length() - 3, sb.length()).toString());
             out.println("}");
         }
     }
@@ -49,7 +50,7 @@ public class Generator {
             out.println("import java.text.ParseException;\n");
 
             out.println("class " + LexerName + " {");
-            //members
+            // members
             out.println("\tprivate InputStream input;");
             out.println("\tprivate int curChar, curPos;");
             out.println("\tprivate String curString;");
@@ -60,9 +61,10 @@ public class Generator {
             out.println("\t\tcurPos = 0;");
             out.println("\t\tnextChar();");
             out.println("\t}\n");
-
+            // isBlank func
+            // if your grammar allows to redefine blank characters, change it
             out.println("\tprivate boolean isBlank(int c) {\n\t\treturn Character.isWhitespace(c);\n\t}\n");
-
+            // nextChar func
             out.println("\tprivate void nextChar() throws ParseException {");
             out.println("\t\tcurPos++;");
             out.println("\t\ttry {");
@@ -71,16 +73,21 @@ public class Generator {
             out.println("\t\t\tthrow new ParseException(e.getMessage(), curPos);");
             out.println("\t\t}");
             out.println("\t}\n");
-
+            // nextToken func
             out.println("\tvoid nextToken() throws ParseException {");
+            // skip blanks
             out.println("\t\twhile (isBlank(curChar)) {\n\t\t\tnextChar();\n\t\t}");
+            // if eof happens, return END token
             out.println("\t\tif (curChar == -1) {\n\t\t\tcurToken = " + NAME + "Token.END;\n\t\t\treturn;\n\t\t}\n");
             out.println("\t\tcurString = \"\";");
             out.println("\t\tcurToken = " + NAME + "Token.END;");
             out.println("\t\t" + NAME + "Token prev = " + NAME + "Token.END;");
+            // greedily reading forward to be able to match string tokens
             out.println("\t\twhile (curToken == " + NAME + "Token.END) {");
             out.println("\t\t\tcurString = curString.concat(Character.toString((char)curChar));");
             out.println("\t\t\tswitch (curString) {");
+            // printing all terminals as switch cases
+            // if one matches, read next char and write the corresponding token to curToken
             for (Map.Entry<String, Terminal> t_entry : grammar.terminals.entrySet()) {
                 Terminal curr_t = t_entry.getValue();
                 for (String str : curr_t.str) {
@@ -92,6 +99,7 @@ public class Generator {
             }
             out.println("\t\t\t\tdefault:");
             out.print("\t\t\t\t\t");
+            // here we print all the regexp representations of terminals
             for (Map.Entry<String, Terminal> t_entry : grammar.terminals.entrySet()) {
                 Terminal curr_t = t_entry.getValue();
                 for (String regex : curr_t.regex) {
@@ -101,11 +109,12 @@ public class Generator {
                     out.print("\t\t\t\t\t} else ");
                 }
             }
+            // we went all the way to the eof and could not determine char sequence
             out.println("if ((curChar == -1 || isBlank(curChar)) && prev == " + NAME + "Token.END) {");
             out.println("\t\t\t\t\t\tthrow new ParseException(\"Illegal character '\" + curString.charAt(0) + \"' at position \", curPos - curString.length());");
             out.println("\t\t\t\t\t}");
             out.println("\t\t\t}");
-
+            // confusing schemes to check if we need to continue reading
             out.println("\t\t\tif (curToken == " + NAME + "Token.END) {");
             out.println("\t\t\t\tif (prev != " + NAME + "Token.END) {");
             out.println("\t\t\t\t\tcurString = curString.substring(0, curString.length() - 1);");
@@ -121,6 +130,7 @@ public class Generator {
             out.println("\t\t}");
             out.println("\t}");
 
+            // some useless getters
             out.println("\n\t" + NAME + "Token getCurToken() {");
             out.println("\t\treturn curToken;");
             out.println("\t}");
@@ -157,7 +167,6 @@ public class Generator {
             // imports
             out.println("import java.io.InputStream;");
             out.println("import java.text.ParseException;\n");
-
             // class header
             out.println("public class " + ParserName + " {");
             // user-defined members
@@ -169,59 +178,60 @@ public class Generator {
             out.println("\t\tlex = new " + LexerName + "(input);");
             out.println("\t\tlex.nextToken();");
             out.print("\t\t");
-            if (!grammar.start.returnType().equals("void"))
-                out.print("return ");
+            if (!grammar.start.returnType().equals("void")) out.print("return ");
             out.println(grammar.start.name + "();");
             out.println("\t}\n");
 
+            // generate a function for each nonterm
             Map<NonTerminal, Map<Terminal, Rule>> table = grammar.getTable();
             for (Map.Entry<String, NonTerminal> nt_entry : grammar.nonTerminals.entrySet()) {
                 NonTerminal curr_nt = nt_entry.getValue();
                 // return type & name for a nonterm
                 out.print("\tprivate " + curr_nt.returnType() + " " + nt_entry.getKey() + "(");
                 // inherited attrs as func args
-                if (curr_nt.inh.size() != 0) {
-                    out.print(curr_nt.inh.get(0).type + " " + curr_nt.inh.get(0).name);
+                StringBuilder inh = new StringBuilder();
+                for (Element.Attribute attribute : curr_nt.inh) {
+                    inh.append(attribute.type).append(" ").append(attribute.name).append(", ");
                 }
-                for (int i = 1; i < curr_nt.inh.size(); i++) {
-                    out.print(", " + curr_nt.inh.get(i).type + " " + curr_nt.inh.get(i).name);
-                }
+                // again removing last comma
+                if (inh.length() >= 2)
+                    out.print(inh.delete(inh.length() - 2, inh.length()).toString());
                 out.println(") throws ParseException {");
+
+                // user-defined init
                 out.println(curr_nt.init);
                 // declare ret val
-                if (!curr_nt.returnType().equals("void")) {
+                if (!curr_nt.returnType().equals("void"))
                     out.println("\t\t" + curr_nt.returnType() + " " + curr_nt.synth.name + " = " + defaultValue(curr_nt.returnType()) + ";");
-                }
 
                 // here start the rules
                 out.println("\t\tswitch (lex.getCurToken()) {");
                 for (Map.Entry<Terminal, Rule> entry : table.get(nt_entry.getValue()).entrySet()) {
                     // a case for each possible term
-                    out.println("\t\t\tcase " + entry.getKey().name.toUpperCase() + ":\n\t\t\t{");
+                    out.println("\t\t\tcase " + entry.getKey().name.toUpperCase() + ": {");
+                    // check whether it was not inferred through EPS rule
                     boolean own = !entry.getValue().head().name.equals(grammar.EPS.name);
                     Rule rule = entry.getValue();
                     for (int i = 0; i < rule.units.size(); i++) {
                         Element elem = rule.units.get(i).element;
                         if (elem instanceof Terminal) {
                             out.println(rule.units.get(i).code);
-                            if (own) {
-                                out.println("\t\t\t\tlex.nextToken();");
-                            }
+                            if (own) out.println("\t\t\t\tlex.nextToken();");
                         } else {
-                            // here we going to call nt
+                            // here we are going to call nonterms from rule
                             if (!elem.returnType().equals("void")) {
                                 out.print("\t\t\t\t" + elem.returnType() + " " + elem.name + " = " + elem.name + "(");
-                                if (rule.units.get(i).args.size() != 0) {
-                                    out.print(rule.units.get(i).args.get(0));
+                                StringBuilder args = new StringBuilder();
+                                for (String arg : rule.units.get(i).args) {
+                                    args.append(arg).append(", ");
                                 }
-                                for (int j = 1; j < rule.units.get(i).args.size(); j++) {
-                                    out.print(", " + rule.units.get(i).args.get(j));
-                                }
+                                if (args.length() >= 2)
+                                    out.print(args.delete(args.length() - 2, args.length()).toString());
                                 out.println(");");
                             } else {
                                 out.println("\t\t\t\t" + elem.name + "();");
                             }
-                            out.println(rule.units.get(i).code);
+                            out.println("\t\t\t\t" + rule.units.get(i).code);
                         }
                     }
                     out.println("\t\t\t\tbreak;\n\t\t\t}");
